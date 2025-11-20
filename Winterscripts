@@ -1,0 +1,79 @@
+--// Winters-Walk by Winter Scripts
+local Players = game:GetService("Players")
+local LP = Players.LocalPlayer
+
+--// GUI
+local ScreenGui = Instance.new("ScreenGui", LP:WaitForChild("PlayerGui"))
+ScreenGui.ResetOnSpawn = false
+
+local Frame = Instance.new("Frame", ScreenGui)
+Frame.Size = UDim2.new(0, 240, 0, 120)
+Frame.Position = UDim2.new(0.3, 0, 0.3, 0)
+Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+Frame.Active = true
+Frame.Draggable = true
+
+-- Smooth Corners
+local corner = Instance.new("UICorner", Frame)
+corner.CornerRadius = UDim.new(0, 12)
+
+-- RGB Outline
+local stroke = Instance.new("UIStroke", Frame)
+stroke.Thickness = 2
+
+task.spawn(function()
+	while task.wait() do
+		for i = 0, 255 do
+			stroke.Color = Color3.fromHSV(i/255, 1, 1)
+			task.wait(0.02)
+		end
+	end
+end)
+
+-- Buttons
+local ToggleBtn = Instance.new("TextButton", Frame)
+ToggleBtn.Size = UDim2.new(0, 200, 0, 35)
+ToggleBtn.Position = UDim2.new(0, 20, 0, 15)
+ToggleBtn.Text = "Toggle No Animation"
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 10)
+
+local KickBtn = Instance.new("TextButton", Frame)
+KickBtn.Size = UDim2.new(0, 200, 0, 35)
+KickBtn.Position = UDim2.new(0, 20, 0, 65)
+KickBtn.Text = "Kick"
+KickBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+KickBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+Instance.new("UICorner", KickBtn).CornerRadius = UDim.new(0, 10)
+
+--// Animation Toggle
+local disabled = false
+local savedAnimate = nil
+
+ToggleBtn.MouseButton1Click:Connect(function()
+	local char = LP.Character
+	if not char then return end
+
+	if not disabled then
+		-- save animations
+		if char:FindFirstChild("Animate") then
+			savedAnimate = char.Animate:Clone()
+			char.Animate:Destroy()
+		end
+		disabled = true
+		ToggleBtn.Text = "Enable Animation"
+	else
+		-- restore animations
+		if savedAnimate then
+			savedAnimate.Parent = char
+		end
+		disabled = false
+		ToggleBtn.Text = "Disable Animation"
+	end
+end)
+
+--// Kick button
+KickBtn.MouseButton1Click:Connect(function()
+	LP:Kick("successful steal")
+end)
