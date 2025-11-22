@@ -1,0 +1,232 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local LocalPlayer = Players.LocalPlayer
+
+-- Create ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "Winter Scripts"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Main Frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.fromOffset(280, 140)
+MainFrame.Position = UDim2.new(0.05, 0, 0.2, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+-- UIStroke + UICorner
+local UIStroke = Instance.new("UIStroke")
+UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+UIStroke.Thickness = 1.5
+UIStroke.Color = Color3.fromRGB(70, 70, 80)
+UIStroke.Parent = MainFrame
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 14)
+UICorner.Parent = MainFrame
+
+-- Title
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, -24, 0, 32)
+TitleLabel.Position = UDim2.fromOffset(12, 10)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Font = Enum.Font.FredokaOne
+TitleLabel.TextSize = 26
+TitleLabel.Text = "Winter Scripts"
+TitleLabel.TextColor3 = Color3.fromRGB(240, 240, 245)
+TitleLabel.TextStrokeColor3 = Color3.fromRGB(0,0,0)
+TitleLabel.TextStrokeTransparency = 0.8
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Center
+TitleLabel.Parent = MainFrame
+
+-- Status Label
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Size = UDim2.new(1, -24, 0, 20)
+StatusLabel.Position = UDim2.fromOffset(12, 46)
+StatusLabel.Font = Enum.Font.Gotham
+StatusLabel.TextSize = 14
+StatusLabel.TextColor3 = Color3.fromRGB(200,200,210)
+StatusLabel.Text = "Ready to Activate"
+StatusLabel.TextWrapped = true
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Center
+StatusLabel.Parent = MainFrame
+
+-- Activate Button
+local ActivateButton = Instance.new("TextButton")
+ActivateButton.Size = UDim2.new(1, -24, 0, 52)
+ActivateButton.Position = UDim2.fromOffset(12, 72)
+ActivateButton.Font = Enum.Font.GothamBold
+ActivateButton.TextSize = 18
+ActivateButton.Text = "⚡ Activate"
+ActivateButton.TextColor3 = Color3.fromRGB(235, 235, 240)
+ActivateButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+ActivateButton.BackgroundTransparency = 0.2
+ActivateButton.BorderSizePixel = 0
+ActivateButton.AutoButtonColor = true
+ActivateButton.Parent = MainFrame
+
+local ButtonCorner = Instance.new("UICorner")
+ButtonCorner.CornerRadius = UDim.new(0, 10)
+ButtonCorner.Parent = ActivateButton
+
+-- Load Net
+local Net = require(ReplicatedStorage:WaitForChild("Packages").Net)
+
+-- Activate Logic
+ActivateButton.MouseButton1Click:Connect(function()
+    ActivateButton.Text = "Working..."
+    local Character = LocalPlayer.Character
+    local Humanoid = Character:WaitForChild("Humanoid")
+    local WebSlinger = LocalPlayer.Backpack:FindFirstChild("Web Slinger")
+
+    if WebSlinger and WebSlinger:IsA("Tool") then
+        Humanoid:EquipTool(WebSlinger)
+        local RootPart = Character:FindFirstChild("HumanoidRootPart")
+
+        for _, Player in ipairs(Players:GetPlayers()) do
+            if Player ~= LocalPlayer and Player.Character then
+                local Target = Player.Character
+                local TargetHumanoid = Target:FindFirstChild("Humanoid")
+                local TargetRoot = Target:FindFirstChild("HumanoidRootPart")
+
+                if TargetHumanoid and TargetHumanoid.Health > 0 and TargetRoot then
+                    Net:RemoteEvent("UseItem"):FireServer(TargetRoot.Position, TargetRoot)
+                    ActivateButton.Text = "Web Slinging Player"
+
+                    -- Break movement
+                    local HeartbeatConnection
+                    HeartbeatConnection = RunService.Heartbeat:Connect(function()
+                        if Character and RootPart then
+                            RootPart.CFrame = RootPart.CFrame + (RootPart.CFrame.LookVector * -50)
+                        else
+                            HeartbeatConnection:Disconnect()
+                        end
+                    end)
+
+                    wait(0.3)
+                    for i = 1,4 do
+                        for _, Part in ipairs(Character:GetDescendants()) do
+                            if Part:IsA("BasePart") then
+                                Part.AssemblyLinearVelocity = Vector3.new()
+                                Part.AssemblyAngularVelocity = Vector3.new()
+                            end
+                        end
+                        wait(0.3)
+                    end
+                    HeartbeatConnection:Disconnect()
+                    ActivateButton.Text = "Auto Grab initialized"
+
+                    -- Auto interact ProximityPrompts
+                    for _, Prompt in ipairs(workspace:GetDescendants()) do
+                        if Prompt:IsA("ProximityPrompt") and Prompt.Enabled then
+                            local PromptParent = Prompt.Parent
+                            if PromptParent:IsA("BasePart") then
+                                local Distance = (PromptParent.Position - RootPart.Position).Magnitude
+                                if Distance <= Prompt.MaxActivationDistance then
+                                    Prompt:InputHoldBegin()
+                                    task.wait(Prompt.HoldDuration + 0.05)
+                                    Prompt:InputHoldEnd()
+                                end
+                            end
+                        end
+                    end
+
+                    ActivateButton.Text = "Grabbing Brainrot.."
+                    wait(1.5)
+                    ActivateButton.Text = "Teleporting.."
+
+                    local Head = Character:FindFirstChild("Head")
+                    local Plots = workspace:FindFirstChild("Plots")
+
+                    if Plots then
+                        for _, Plot in ipairs(Plots:GetChildren()) do
+                            local PlotSign = Plot:FindFirstChild("PlotSign")
+                            if PlotSign then
+                                local YourBase = PlotSign:FindFirstChild("YourBase")
+                                local Spawn = Plot:FindFirstChild("Spawn")
+                                if YourBase and YourBase.Enabled and Spawn then
+                                    local TelePos = Spawn.Position - (Spawn.CFrame.LookVector * 5)
+                                    RootPart.CFrame = CFrame.new(TelePos + Vector3.new(0,-1,0))
+                                    Head.CFrame = CFrame.new(TelePos + Vector3.new(0,-1,0))
+                                    Humanoid.PlatformStand = true
+                                    Head.Anchored = true
+                                    wait(0.4)
+                                    LocalPlayer:Kick("Disconnect")
+                                    break
+                                end
+                            end
+                        end
+                    end
+                    break
+                end
+            end
+        end
+    else
+        ActivateButton.Text = "No Web Slinger Found"
+        wait(2)
+        ActivateButton.Text = "⚡ Activate"
+    end
+end)
+
+-- Visual tweaks
+RunService.Heartbeat:Connect(function()
+    local Plots = workspace:FindFirstChild("Plots")
+    if Plots then
+        for _, Plot in ipairs(Plots:GetChildren()) do
+            if Plot:IsA("Model") and Plot:FindFirstChild("Decorations") then
+                for _, Part in ipairs(Plot.Decorations:GetDescendants()) do
+                    if Part:IsA("BasePart") then
+                        Part.Transparency = 0.8
+                    end
+                end
+            end
+        end
+    end
+end)
+
+workspace.DescendantAdded:Connect(function(descendant)
+    if descendant:IsA("ForceField") then
+        RunService.Heartbeat:Wait()
+        descendant:Destroy()
+    end
+end)
+
+-- Lighting/Terrain tweaks
+local Lighting = game.Lighting
+local Terrain = workspace:FindFirstChildWhichIsA("Terrain")
+if Terrain then
+    Terrain.WaterWaveSize = 0
+    Terrain.WaterWaveSpeed = 0
+    Terrain.WaterReflectance = 0
+    Terrain.WaterTransparency = 1
+end
+Lighting.Brightness = 2
+Lighting.GlobalShadows = false
+Lighting.FogEnd = 9000000000
+Lighting.FogStart = 9000000000
+for _, descendant in pairs(game:GetDescendants()) do
+    if descendant:IsA("BasePart") then
+        descendant.CastShadow = false
+        descendant.Material = "Plastic"
+        descendant.Reflectance = 0
+        descendant.BackSurface = "SmoothNoOutlines"
+        descendant.BottomSurface = "SmoothNoOutlines"
+        descendant.FrontSurface = "SmoothNoOutlines"
+        descendant.LeftSurface = "SmoothNoOutlines"
+        descendant.RightSurface = "SmoothNoOutlines"
+        descendant.TopSurface = "SmoothNoOutlines"
+    end
+end
+for _, effect in pairs(Lighting:GetDescendants()) do
+    if effect:IsA("PostEffect") then
+        effect.Enabled = false
+    end
+end
